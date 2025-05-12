@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 import tempfile
 import asyncio
 from app.utils import parse_pdf, chunk_text, generate_flashcards_async
+from app.utils import create_anki_package
 
 app = FastAPI()
 
@@ -18,10 +19,12 @@ async def upload_pdf(file: UploadFile = File(...)):
     
     flashcards = await generate_flashcards_async(chunks)
     
-    anki_txt = "\n".join(f"{fc['question']}\t{fc['answer']}" for fc in flashcards)
+    temp_apkg = tempfile.NamedTemporaryFile(delete=False, suffix=".apkg")
+    create_anki_package(flashcards, temp_apkg.name)
     
-    with tempfile.NamedTemporaryFile(delete=False, mode='w', encoding='utf-8') as f:
-        f.write(anki_txt)
-        temp_path = f.name
-    
-    return FileResponse(temp_path, filename="flashcards.txt", media_type="text/plain")
+    return FileResponse(
+        temp_apkg.name,
+        filename="recallr_flashcards.apkg",
+        media_type="application/apkg"
+    )
+
