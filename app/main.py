@@ -7,6 +7,18 @@ from app.utils import create_anki_package
 
 app = FastAPI()
 
+# Allow CORS 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Adjust if needed
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Recallr API!"}
