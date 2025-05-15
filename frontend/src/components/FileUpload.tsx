@@ -53,6 +53,11 @@ const FileUpload = () => {
     const formData = new FormData();
     formData.append("file", file);
 
+    for (let i = 0; i <= 100; i += 10) {
+      await new Promise(r => setTimeout(r, 600)); // 50ms delay
+      setUploadProgress(i);
+    }
+
     try {
       const response = await fetch("https://recallr-backend.onrender.com/upload", {
         method: "POST",
