@@ -54,7 +54,7 @@ const FileUpload = () => {
     formData.append("file", file);
 
     try {
-      const response = await fetch("https://recallr-backend.onrender.com", {
+      const response = await fetch("https://recallr-backend.onrender.com/upload", {
         method: "POST",
         body: formData,
       });
