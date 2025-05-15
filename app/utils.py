@@ -82,42 +82,63 @@ def chunk_text(text, max_length=300):
         print(f"Chunking error: {str(e)}")
         return []
 
-
 def parse_flashcards_response(response: str) -> list[dict]:
     try:
+        # First extract the actual content from the possible JSON response
+        content = response
         try:
             json_data = json.loads(response)
-            text = str(json_data) if not isinstance(json_data, str) else json_data
+            if isinstance(json_data, dict):
+                # Try common LLM API response structures
+                if 'choices' in json_data and len(json_data['choices']) > 0:
+                    content = json_data['choices'][0].get('message', {}).get('content', response)
+                elif 'messages' in json_data and len(json_data['messages']) > 0:
+                    content = json_data['messages'][0].get('content', response)
+                else:
+                    content = response
         except json.JSONDecodeError:
-            text = response
-        
-        # Enhanced cleaning for newlines and formatting
-        text = re.sub(r'\*\*Card \d+\*\*', '', text)  # Remove card markers
-        text = re.sub(r'\n+', '\n', text)  # Replace multiple newlines with single
-        text = re.sub(r'(\n\s*){3,}', '\n\n', text)  # Limit consecutive newlines to 2
-        text = re.sub(r'^\s+|\s+$', '', text)  # Trim leading/trailing whitespace
-        
+            pass  # Not JSON, use raw response
+
+        # Aggressive cleaning of API metadata artifacts
+        content = re.sub(r"'logprobs': None, 'finish_reason': 'stop'}[^\w]*", "", content)
+        content = re.sub(r"'usage': \{.*?\},?", "", content)
+        content = re.sub(r"'system_fingerprint': '[^']*',?", "", content)
+        content = re.sub(r"'x_groq': \{.*?\},?", "", content)
+        content = re.sub(r"\{.*?\}", "", content)  # Remove any other JSON fragments
+        content = re.sub(r'\n\s*\n', '\n', content)  # Normalize newlines
+
+        # Parse questions and answers
         flashcards = []
-        matches = re.findall(r"Question:\s*(.*?)\s*Answer:\s*(.*?)(?=(?:Question:|$))", text, re.DOTALL)
+        matches = re.finditer(
+            r"Question:\s*(.*?)\s*Answer:\s*(.*?)(?=(?:Question:|$))", 
+            content, 
+            re.DOTALL
+        )
         
-        for q, a in matches:
-            # Clean each question and answer
-            clean_q = re.sub(r'\n+', ' ', q).strip()  # Replace newlines with space in questions
-            clean_a = re.sub(r'\n+', ' ', a).strip()  # Replace newlines with space in answers
-            clean_q = re.sub(r'\s{2,}', ' ', clean_q)  # Collapse multiple spaces
-            clean_a = re.sub(r'\s{2,}', ' ', clean_a)  # Collapse multiple spaces
+        for match in matches:
+            q = match.group(1).strip()
+            a = match.group(2).strip()
             
-            if clean_q and clean_a:  # Only add if both fields exist
+            # Final cleaning pass for each question/answer
+            q = re.sub(r'[\s\n]+', ' ', q)  # Normalize all whitespace
+            a = re.sub(r'[\s\n]+', ' ', a)
+            
+            if q and not q.startswith(('{', "'")) and a:  # Skip JSON-looking entries
                 flashcards.append({
-                    "question": clean_q,
-                    "answer": clean_a
+                    "question": q,
+                    "answer": a
                 })
         
-        return flashcards if flashcards else [{"question": "Failed to parse", "answer": text.strip()}]
+        return flashcards if flashcards else [{
+            "question": "No valid flashcards found", 
+            "answer": f"Original content: {content[:200]}..."
+        }]
         
     except Exception as e:
-        print(f"Response parsing error: {str(e)}")
-        return [{"question": "Parsing crashed", "answer": str(e)}]  
+        return [{
+            "question": "Parsing error", 
+            "answer": f"Error: {str(e)}\nRaw start: {response[:200]}"
+        }]
 
 async def generate_flashcards_async(chunks: list[str], batch_size: int = 2) -> list[dict]:
     try:
@@ -129,13 +150,14 @@ async def generate_flashcards_async(chunks: list[str], batch_size: int = 2) -> l
         
         async def process_batch(batch: list[str]) -> list[dict]:
             try:
-                batch_text = "\n\n".join(f"Paragraph {i}:\n{chunk}" for i, chunk in enumerate(batch))
-                prompt = f"""
-Convert these paragraphs into flashcards:
-Format:
-Question: <question>
-Answer: <answer>
+                batch_text = " ".join(f"Paragraph {i}:\n{chunk}" for i, chunk in enumerate(batch))
+                prompt = f"""Convert to flashcards using EXACTLY this format:
+Question: [Your question here]
+Answer: [Your answer here]
 
+NO other text, NO numbering, NO headers, just alternating Question/Answer pairs.
+
+Content to convert:
 {batch_text}"""
                 response = await ask_groq(prompt)
                 return parse_flashcards_response(response)
