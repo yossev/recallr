@@ -151,14 +151,36 @@ async def generate_flashcards_async(chunks: list[str], batch_size: int = 2) -> l
         async def process_batch(batch: list[str]) -> list[dict]:
             try:
                 batch_text = " ".join(f"Paragraph {i}:\n{chunk}" for i, chunk in enumerate(batch))
-                prompt = f"""Convert to flashcards using EXACTLY this format:
-Question: [Your question here]
-Answer: [Your answer here]
+                prompt = f"""Convert the following content into flashcards using EXACTLY this format:
+Question: [question about core academic content]
+Answer: [concise factual answer]
 
-NO other text, NO numbering, NO headers, just alternating Question/Answer pairs.
+STRICT RULES:
+1. ONLY create cards for:
+   - Key concepts, theories, and definitions
+   - Important facts, formulas, and processes
+   - Technical terms and their explanations
+   - Critical historical events/dates
+   - Scientific principles and laws
+
+2. EXCLUDE ALL:
+   - Contact info (emails, phone numbers, addresses)
+   - Course logistics (office hours, deadlines, policies)
+   - Personal names (instructors, authors, unless seminal)
+   - Institutional details (building numbers, departments)
+   - References (page numbers, citations, ISBNs)
+   - Examples containing real-world identifiers
+
+3. FORMAT REQUIREMENTS:
+   - No card numbers or headers
+   - No extra commentary or explanations
+   - Questions must be direct and test understanding
+   - Answers should be concise (1-2 sentences max)
 
 Content to convert:
-{batch_text}"""
+{batch_text}
+
+REMEMBER: If unsure whether content is academic or administrative, discard it."""
                 response = await ask_groq(prompt)
                 return parse_flashcards_response(response)
             except Exception as e:
