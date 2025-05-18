@@ -79,7 +79,7 @@ const FileUpload = () => {
 
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Something went wrong during upload.");
+      alert("Something went wrong during upload."+ error);
     } finally {
       setTimeout(() => {
         setIsUploading(false);

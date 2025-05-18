@@ -5,3 +5,4 @@ PyMuPDF
 genanki
 httpx
 dotenv
+slowapi
