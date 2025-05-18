@@ -9,7 +9,7 @@ const tiers = [
     priceMonthly: '$0',
     description: 'Perfect for trying out Recallr.',
     features: [
-      'Up to 5 PDF uploads per month', 
+      'Up to 5 PDF uploads per day', 
       'Basic flashcard generation',
       'Standard processing speed',
       'Basic support',
