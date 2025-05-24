@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GithubIcon, TwitterIcon, MailIcon } from 'lucide-react';
+import { GithubIcon, MailIcon } from 'lucide-react';
+
 const Footer = () => {
-  return <footer className="bg-white border-t border-gray-200">
+  return (
+    <footer className="bg-white border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="md:flex md:justify-between">
           <div className="mb-6 md:mb-0">
@@ -44,13 +46,18 @@ const Footer = () => {
                 Connect
               </h3>
               <div className="flex space-x-4 mt-2">
-                <a href="#" className="text-gray-500 hover:text-indigo-600">
+                <a 
+                  href="https://github.com/yossev" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-gray-500 hover:text-indigo-600"
+                >
                   <GithubIcon size={20} />
                 </a>
-                <a href="#" className="text-gray-500 hover:text-indigo-600">
-                  <TwitterIcon size={20} />
-                </a>
-                <a href="#" className="text-gray-500 hover:text-indigo-600">
+                <a 
+                  href="mailto:yossef.hisham@proton.me" 
+                  className="text-gray-500 hover:text-indigo-600"
+                >
                   <MailIcon size={20} />
                 </a>
               </div>
@@ -63,6 +70,8 @@ const Footer = () => {
           </p>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
+
 export default Footer;
